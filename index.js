@@ -146,12 +146,7 @@ async function run() {
         //     const users = await userCollection.findOne(query);
         //     res.send(users);
         // });
-        app.get('/allsellar', async (req, res) => {
-            const email = req.query.email
-            const query = { designation: email }
-            const allsellar = await userCollection.find(query).toArray();
-            res.send(allsellar?.designation === 'Seller');
-        });
+
 
 
         app.post('/bookings', async (req, res) => {
@@ -167,6 +162,12 @@ async function run() {
             res.send(booking);
 
         });
+        app.get('/paybooking/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await bookingCollection.findOne(filter);
+            res.send(result);
+        });
 
         // delete booking 
         app.delete('/booking/:id', verifyJWT, async (req, res) => {
@@ -175,9 +176,6 @@ async function run() {
             const result = await bookingCollection.deleteOne(filter);
             res.send(result);
         });
-
-
-
 
 
 
