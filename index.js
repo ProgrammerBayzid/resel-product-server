@@ -140,12 +140,14 @@ async function run() {
             res.send(users);
 
         });
-        // app.get('/user', async (req, res) => {
-        //     const email = req.query.email
-        //     const query = { email: email }
-        //     const users = await userCollection.findOne(query);
-        //     res.send(users);
-        // });
+
+
+        app.get('/user', async (req, res) => {
+            const email = req.query.email
+            const query = { email: email }
+            const users = await userCollection.findOne(query);
+            res.send(users);
+        });
 
 
 
