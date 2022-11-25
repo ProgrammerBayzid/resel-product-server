@@ -53,6 +53,7 @@ async function run() {
         const productsCollection = client.db('phones').collection('products');
         const userCollection = client.db('phones').collection('users');
         const bookingCollection = client.db('phones').collection('bookings');
+        const paymentsCollection = client.db('phones').collection('payments');
 
 
 
