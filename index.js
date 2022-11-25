@@ -1,5 +1,5 @@
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, } = require('mongodb');
 
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
@@ -22,6 +22,30 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({
+            message: 'unauthorized access'
+        })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({
+                message: 'unauthorized access'
+            })
+        }
+        req.decoded = decoded;
+        next();
+    })
+};
+
+
+
+
+
 async function run() {
     try {
 
@@ -31,11 +55,49 @@ async function run() {
         const bookingCollection = client.db('phones').collection('bookings');
 
 
+
+
+
+
+        const verifyAdmin = async (req, res, next) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await userCollection.findOne(query);
+
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ message: ' forbidden access' })
+            }
+            next();
+        }
+
+
+
+
+
+
         app.get('/products', async (req, res) => {
             const query = {};
             const products = await productsCollection.find(query).toArray();
             res.send(products);
         });
+
+        // product get by email 
+        app.get('/myproducts', async (req, res) => {
+            let email = req.query.email;
+            const query = { email: email };
+            const products = await productsCollection.find(query).toArray();
+            res.send(products);
+        });
+
+
+        // delete product 
+        app.delete('/products/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await productsCollection.deleteOne(filter);
+            res.send(result);
+        });
+
         app.get('/catagorys', async (req, res) => {
             const query = {};
             const catagory = await catagoryCollection.find(query).toArray();
@@ -48,10 +110,26 @@ async function run() {
             res.send(catagoryName);
         });
 
+
+
+        // jwt Sicrecet token
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '30d' })
+            res.send({ token })
+        });
+
         // post user details 
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await userCollection.insertOne(user);
+            res.send(result);
+        });
+        //add products 
+        app.post('/products', async (req, res) => {
+            const user = req.body;
+            const result = await productsCollection.insertOne(user);
             res.send(result);
         });
 
@@ -62,13 +140,88 @@ async function run() {
             res.send(users);
 
         });
+        // app.get('/user', async (req, res) => {
+        //     const email = req.query.email
+        //     const query = { email: email }
+        //     const users = await userCollection.findOne(query);
+        //     res.send(users);
+        // });
+        app.get('/allsellar', async (req, res) => {
+            const email = req.query.email
+            const query = { designation: email }
+            const allsellar = await userCollection.find(query).toArray();
+            res.send(allsellar?.designation === 'Seller');
+        });
+
 
         app.post('/bookings', async (req, res) => {
             const booking = req.body;
             const result = await bookingCollection.insertOne(booking);
             res.send(result);
         });
+        // booking Get by email 
+        app.get('/bookings', verifyJWT, async (req, res) => {
+            let email = req.query.email;
+            const query = { email: email };
+            const booking = await bookingCollection.find(query).toArray();
+            res.send(booking);
 
+        });
+
+        // delete booking 
+        app.delete('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await bookingCollection.deleteOne(filter);
+            res.send(result);
+        });
+
+
+
+
+
+
+
+        //  seller role 
+        app.get('/user/sellar/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const person = await userCollection.findOne(query);
+            res.send({ isSellar: person?.designation === 'Seller' })
+        })
+
+
+
+
+
+
+        // make admin role 
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await userCollection.findOne(query);
+            res.send({ isAdmin: user?.role === 'admin' })
+        })
+
+        app.put('/users/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        });
+        // delete user 
+        app.delete('/user/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await userCollection.deleteOne(filter);
+            res.send(result);
+        });
 
 
     } catch (error) {
