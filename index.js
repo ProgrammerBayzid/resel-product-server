@@ -179,6 +179,39 @@ async function run() {
 
 
 
+        // payment methode 
+        app.post('/create-payment-intent', async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         //  seller role 
         app.get('/user/sellar/:email', async (req, res) => {
