@@ -1,10 +1,9 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId, } = require('mongodb');
-
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
-
 require('dotenv').config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -181,7 +180,7 @@ async function run() {
 
 
         // payment methode 
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const booking = req.body;
             const price = booking.price;
             const amount = price * 100;
@@ -198,7 +197,7 @@ async function run() {
             });
         });
 
-        app.post('/payments', async (req, res) => {
+        app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
             const result = await paymentsCollection.insertOne(payment);
             const id = payment.bookingId
@@ -211,19 +210,7 @@ async function run() {
             }
             const updatedResult = await bookingCollection.updateOne(filter, updatedDoc)
             res.send(result);
-        })
-
-
-
-
-
-
-
-
-
-
-
-
+        });
 
 
 
