@@ -123,9 +123,11 @@ async function run() {
         // post user details 
         app.post('/users', async (req, res) => {
             const user = req.body;
+            user.verified = false;
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
+
         //add products 
         app.post('/products', async (req, res) => {
             const user = req.body;
@@ -139,6 +141,27 @@ async function run() {
             const users = await userCollection.find(query).toArray();
             res.send(users);
 
+        });
+
+        // get all seller 
+        app.get('/allseller', async (req, res) => {
+            const role = req.query.role
+            const query = { designation: role }
+            const users = await userCollection.find(query).toArray();
+            res.send(users)
+        });
+        // make verify seller 
+        app.put('/allseller/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    verified: true
+                }
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
         });
 
 
