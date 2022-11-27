@@ -164,7 +164,7 @@ async function run() {
             res.send(result)
         });
 
-
+        // context user 
         app.get('/user', async (req, res) => {
             const email = req.query.email
             const query = { email: email }
@@ -260,7 +260,7 @@ async function run() {
             res.send({ isAdmin: user?.role === 'admin' })
         })
 
-        app.put('/users/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.put('/users/admin/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const options = { upsert: true };
